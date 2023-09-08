@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game of Life</title>
+</head>
+<body>
+    <button onclick="_generate()">generate</button>
+    <button onclick="_button()">pause/resume</button>
+
+    <input type="text" id="w" onchange="_widthInputChange()" value="50">
+    <input type="text" id="h" onchange="_heightInputChange()" value="50">
+
+
+    <table id="field"></table>
+
+</body>
+<script>
+    let _gameStatus = 0
+
+    const CELL_LIVE = 1, CELL_DEAD = 0
+          
+    const table = document.getElementById('field')
+
+    let tds = []
+    let field = []
+
+    let fieldWidth = 50
+    let fieldHeight = 50
+
+    const RANDOM_RATE = 0.5
+
+    const cellFactory = (x, y) => {
+        let td = document.createElement('td')
+        let isDead = Math.random() <= RANDOM_RATE
+
+        let cellClass
+        let cellStatus
+
+        if (isDead) {
+            cellClass = 'dead'
+            cellStatus = CELL_DEAD
+        }
+        else {
+            cellClass = 'live'
+            cellStatus = CELL_LIVE
+        }
+
+        td.classList.add(cellClass)
+        td.dataset.x = x
+        td.dataset.y = y
+
+        td.onclick = function (ev) {
+            let x = this.dataset.x
+            let y = this.dataset.y
+
+            field[x][y] = field[x][y] == CELL_LIVE ? CELL_DEAD : CELL_LIVE
+            this.classList.toggle('dead')
+            this.classList.toggle('live')
+        }
+
+        return [td, cellStatus]
+    }
+
+    function generateGame() {
+        field = []
+        tds = []
+
+        table.innerHTML = ''
+        
+        for (let i = 0; i < fieldWidth; i++) {
+            let tr = document.createElement('tr')
+
+            let tdsRow = []
+            let fieldRow = []
+
+            for (let j = 0; j < fieldHeight; j++) {
+                let [td, field] = cellFactory(i, j)
+                tdsRow.push(td)
+                fieldRow.push(field)
+
+                tr.appendChild(td)
+            }
+            
+            tds.push(tdsRow)
+            field.push(fieldRow)
+            table.appendChild(tr)
+        }
+    }
+
+    function getLiveNeighboursCount(x, y) {
+        let count = 0
+
+        if (x - 1 >= 0) {
+            count += field[x - 1][y]
+            count += field[x - 1][y - 1] || 0
+            count += field[x - 1][y + 1] || 0
+            
+        }
+
+        if (x + 1 < fieldWidth) {
+            count += field[x + 1][y]
+            count += field[x + 1][y + 1] || 0
+            count += field[x + 1][y - 1] || 0
+        }
+        
+        count += field[x][y - 1] || 0
+        count += field[x][y + 1] || 0
+
+        return count
+    }
+
+    function tick() {
+        let newField = []
+
+        for (let i = 0; i < fieldWidth; i++) {
+            let newRow = []
+
+            for (let j = 0; j < fieldHeight; j++) {
+                let cellStatus = field[i][j]
+                let liveNeighbours = getLiveNeighboursCount(i, j)
+
+                if (cellStatus == CELL_LIVE && (liveNeighbours == 2 || liveNeighbours == 3)) {
+                    cellStatus = CELL_LIVE
+                }
+                else if (cellStatus == CELL_DEAD && liveNeighbours == 3) {
+                    cellStatus = CELL_LIVE
+                }
+                else {
+                    cellStatus = CELL_DEAD
+                }
+
+                newRow.push(cellStatus)
+            }
+
+            newField.push(newRow)
+        }
+
+        return newField
+    }
+
+    function fill() {
+        for (let i = 0; i < fieldWidth; i++) {
+            for (let j = 0; j < fieldHeight; j++) {
+                let currentCell = field[i][j]
+                let currentTd = tds[i][j]
+
+                if (currentCell == CELL_LIVE) {
+                    currentTd.classList.remove('dead')
+                    currentTd.classList.add('live')
+                }
+                else if (currentCell == CELL_DEAD) {
+                    currentTd.classList.remove('live')
+                    currentTd.classList.add('dead')
+                }
+            }
+            
+        }
+    }
+
+    let INTERVAL
+
+    function _generate() {
+        generateGame()
+    }
+
+    function _pause() {
+        clearInterval(INTERVAL)
+    }
+
+    function _resume() {
+        INTERVAL = setInterval(() => {
+            _tick()    
+        }, 10)
+    }
+
+    function _tick() {
+        field = tick()
+        fill()
+    }
+
+    function _button() {
+        if (_gameStatus == 1) {
+            _pause()
+            _gameStatus = 0
+        }
+        else {
+            _resume()
+            _gameStatus = 1
+        }
+    }
+
+    function _widthInputChange() {
+        fieldWidth = document.getElementById("w").value
+    }
+
+    function _heightInputChange() {
+        fieldHeight = document.getElementById("h").value
+    }
+
+</script>
+<style>
+
+    body {
+        width: 100%;
+        height: 100%;
+    }
+
+    #field {
+        table-layout: fixed;
+    }
+
+    #field td {
+        width: 10px;
+        height: 10px;
+    }
+
+    #field td.dead {
+        width: 10px;
+        height: 10px;
+        background-color: lightgray ;
+    }
+
+    #field td.live {
+        background-color: black;
+    }
+</style>
+</html>
